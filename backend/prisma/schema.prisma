@@ -13,9 +13,23 @@ datasource db {
   url      = env("DATABASE_URL")
 }
 
+
+model Project {
+  id          Int      @id @default(autoincrement())
+  title       String
+  description String?
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+  // Optional: link to a user (owner)
+  ownerId     Int?
+  owner       User?    @relation(fields: [ownerId], references: [id])
+}
+
 model User {
-  id Int @id @default(autoincrement())
-  email String @unique
-  name String?
+  id        Int      @id @default(autoincrement())
+  email     String   @unique
+  password  String   // make sure this exists for auth
+  name      String?
   createdAt DateTime @default(now())
+  projects  Project[]
 }

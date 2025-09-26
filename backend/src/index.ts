@@ -1,67 +1,24 @@
 import express from "express";
+import cors from "cors";
+import cookieParser from "cookie-parser";
+import authRoutes from "./routes/auth";
 import { PrismaClient } from "@prisma/client";
-const app = express();
+import projectRoutes from "./routes/projects";
 const prisma = new PrismaClient();
 
-// Middleware
+const app = express();
 app.use(express.json());
+app.use(cookieParser());
+app.use(
+  cors({
+    origin: process.env.FRONTEND_URL || "http://localhost:3000",
+    credentials: true,
+  })
+);
+app.get("/api/health", (_req, res) => res.json({ status: "ok" }));
+app.use("/auth", authRoutes);
 
-// Create a new user
-app.post("/users", async (req, res) => {
-  const { email, name } = req.body;
-  try {
-    const user = await prisma.user.create({
-      data: { email, name },
-    });
-    res.json(user);
-  } catch (error) {
-    res.status(400).json({ error: "User could not be created" });
-  }
-});
+const PORT = process.env.PORT || 4000;
+app.listen(PORT, () => console.log(`API http://localhost:${PORT}`));
 
-// Get all users
-app.get("/users", async (req, res) => {
-  const users = await prisma.user.findMany();
-  res.json(users);
-});
-
-// Single user by id
-app.get("/users/:id", async (req, res) => {
-  const user = await prisma.user.findUnique({
-    where: { id: Number(req.params.id) },
-  });
-  if (user) res.json(user);
-  else res.status(404).json({ error: "User not found" });
-});
-
-// Update user
-app.put("/users/:id", async (req, res) => {
-  const { name } = req.body;
-  try {
-    const user = await prisma.user.update({
-      where: { id: Number(req.params.id) },
-      data: { name },
-    });
-    res.json(user);
-  } catch (error) {
-    res.status(400).json({ error: "Update failed" });
-  }
-});
-
-// Delete user
-app.delete("/users/:id", async (req, res) => {
-  try {
-    await prisma.user.delete({
-      where: { id: Number(req.params.id) },
-    });
-    res.json({ message: "User deleted" });
-  } catch (error) {
-    res.status(400).json({ error: "Delete failed" });
-  }
-});
-
-app.listen(4000, () => {
-  console.log("Server running on http://localhost:4000");
-});
-
-app.get("/api/health", (req, res) => {});
+app.use("/api/projects", projectRoutes);
